@@ -6,12 +6,18 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import ParseMode
 from aiogram.utils import executor
 
-TOKEN = 'token_here'
+import db
+
+TOKEN = '5800804042:AAGc2pGppN-hpb3Sxng4tAwBUY1YTWoipT4'
 
 bot = Bot(token=TOKEN)
 
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+
+
+async def on_startup(_):
+    await db.db_connect()
 
 
 class Profile(StatesGroup):
@@ -45,7 +51,7 @@ async def get_age(message: types.Message, state: FSMContext):
     await Profile.next()
     await state.update_data(age=int(message.text))
 
-    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
+    markup = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True, selective=True)
     markup.add("Мужчина", "Женщина")
     markup.add("Другое")
 
@@ -64,8 +70,21 @@ async def get_gender(message: types.Message, state: FSMContext):
         data['gender'] = message.text
         await message.answer(f"Вот твоя анкета:\nИмя: {data['name']}\nВозраст: {data['age']}\nГендер: {data['gender']}")
 
+    await db.create_profile(state, message.from_user.id)
     await state.finish()
 
 
+@dp.message_handler(commands='get_profile', state="*")
+async def show_profile(message):
+    profile = await db.get_profile(message.from_user.id)
+    name = profile[1]
+    gender = profile[2]
+    age = profile[3]
+
+    text_in_message = f'Это твоя анкета\n\n' + '*Имя:   *' + f'{name}\n' + '*Гендер:   *' + f'{gender}\n' + '*Возраст:   *' + f'{age}'
+
+    await message.answer(text_in_message, parse_mode=ParseMode.MARKDOWN)
+
+
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, on_startup=on_startup, skip_updates=True)
