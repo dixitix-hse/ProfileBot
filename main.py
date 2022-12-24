@@ -8,7 +8,7 @@ from aiogram.utils import executor
 
 import db
 
-TOKEN = '5800804042:AAGc2pGppN-hpb3Sxng4tAwBUY1YTWoipT4'
+TOKEN = 'token here'
 
 bot = Bot(token=TOKEN)
 
